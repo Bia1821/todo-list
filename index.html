@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <!-- Header -->
+        <header class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 text-center">Todo List</h1>
+        </header>
+
+        <!-- Add Task Form -->
+        <form id="task-form" class="mb-4 flex">
+            <input
+                type="text"
+                id="task-input"
+                placeholder="Add a new task..."
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="New task input"
+                required
+            >
+            <button
+                type="submit"
+                class="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 transition-colors"
+                aria-label="Add task"
+            >
+                Add
+            </button>
+        </form>
+
+        <!-- Task List -->
+        <ul id="task-list" class="space-y-2 mb-4" aria-label="Task list">
+            <!-- Tasks will be dynamically added here -->
+        </ul>
+
+        <!-- Footer with Counters and Clear All -->
+        <footer class="flex justify-between items-center text-sm text-gray-600">
+            <div id="task-counters">
+                Total: <span id="total-count">0</span> | Completed: <span id="completed-count">0</span>
+            </div>
+            <button
+                id="clear-all-btn"
+                class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors"
+                aria-label="Clear all tasks"
+            >
+                Clear All
+            </button>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // DOM Elements
+        const taskForm = document.getElementById('task-form');
+        const taskInput = document.getElementById('task-input');
+        const taskList = document.getElementById('task-list');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const totalCount = document.getElementById('total-count');
+        const completedCount = document.getElementById('completed-count');
+
+        // Load tasks from localStorage on page load
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        renderTasks();
+
+        // Function to save tasks to localStorage
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        // Function to render tasks
+        function renderTasks() {
+            taskList.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center space-x-2 p-2 bg-gray-50 rounded';
+                li.innerHTML = `
+                    <input
+                        type="checkbox"
+                        ${task.completed ? 'checked' : ''}
+                        onchange="toggleComplete(${index})"
+                        class="mr-2"
+                        aria-label="Mark task as complete"
+                    >
+                    <span
+                        class="flex-1 ${task.completed ? 'line-through text-gray-500' : ''} cursor-pointer"
+                        ondblclick="editTask(${index})"
+                        aria-label="Double-click to edit task"
+                    >
+                        ${task.text}
+                    </span>
+                    <button
+                        onclick="deleteTask(${index})"
+                        class="text-red-500 hover:text-red-700"
+                        aria-label="Delete task"
+                    >
+                        ✕
+                    </button>
+                `;
+                taskList.appendChild(li);
+            });
+            updateCounters();
+        }
+
+        // Function to add a new task
+        function addTask(text) {
+            if (text.trim() === '') return; // Basic validation
+            tasks.push({ text: text.trim(), completed: false });
+            saveTasks();
+            renderTasks();
+            taskInput.value = '';
+        }
+
+        // Function to toggle task completion
+        function toggleComplete(index) {
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks();
+            renderTasks();
+        }
+
+        // Function to edit a task inline
+        function editTask(index) {
+            const li = taskList.children[index];
+            const span = li.querySelector('span');
+            const originalText = tasks[index].text;
+            span.contentEditable = true;
+            span.focus();
+            span.onblur = () => {
+                const newText = span.textContent.trim();
+                if (newText === '') {
+                    span.textContent = originalText; // Revert if empty
+                } else {
+                    tasks[index].text = newText;
+                    saveTasks();
+                }
+                span.contentEditable = false;
+                renderTasks();
+            };
+            span.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    span.blur();
+                }
+            };
+        }
+
+        // Function to delete a task
+        function deleteTask(index) {
+            tasks.splice(index, 1);
+            saveTasks();
+            renderTasks();
+        }
+
+        // Function to clear all tasks
+        function clearAllTasks() {
+            tasks = [];
+            saveTasks();
+            renderTasks();
+        }
+
+        // Function to update counters
+        function updateCounters() {
+            const total = tasks.length;
+            const completed = tasks.filter(task => task.completed).length;
+            totalCount.textContent = total;
+            completedCount.textContent = completed;
+        }
+
+        // Event Listeners
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            addTask(taskInput.value);
+        });
+
+        clearAllBtn.addEventListener('click', clearAllTasks);
+    </script>
+</body>
+</html>
